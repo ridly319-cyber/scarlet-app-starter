@@ -3,27 +3,31 @@ Views: one Python function per page.
 
 A view takes the request and returns a response. render() fills a template with a
 context dictionary and wraps the result in an HttpResponse.
-
-This week the catalog comes from a Python list (pages/catalog.py). In Week 6 the same
-view will read from the database — and the template will not change.
 """
 
 from django.shortcuts import render
-
-from .catalog import COFFEES, PRODUCTS
+from operations.models import Product
 
 
 def home(request):
-    featured = [p for p in PRODUCTS if p["size"] == "12 oz bag" and p["active"]]
-    return render(request, "pages/home.html", {"featured": featured[:4]})
+    featured = (
+        Product.objects.filter(active=True, size="12 oz bag")
+        .select_related("coffee")
+        .order_by("sku")[:4]
+    )
+    return render(request, "pages/home.html", {"featured": featured})
 
 
 def catalog(request):
-    active = [p for p in PRODUCTS if p["active"]]
+    products = (
+        Product.objects.filter(active=True)
+        .select_related("coffee")
+        .order_by("sku")
+    )
     return render(
         request,
         "pages/catalog.html",
-        {"products": active, "coffees": COFFEES, "count": len(active)},
+        {"products": products, "count": products.count()},
     )
 
 
